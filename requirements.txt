@@ -6,5 +6,8 @@ scikit-learn
 torchvision
 numpy
 hdbscan
-ipython
 kneed
+kagglehub
+ipython
+streamlit
+pandas

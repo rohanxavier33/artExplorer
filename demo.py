@@ -129,6 +129,6 @@ st.markdown("""
 <div class="footer">
     <p>
             &copy; 2025 Rohan Xavier Gupta |
-            <a href="https://github.com/rohanxavier33" target="_blank">GitHub</a> | 
+            <a href="https://github.com/rohanxavier33" target="_blank">GitHub</a> 
             </p>  </div>
 """, unsafe_allow_html=True)

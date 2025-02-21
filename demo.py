@@ -44,7 +44,7 @@ if "image_uploaded" not in st.session_state:
     st.session_state.image_uploaded = False
 
 if st.session_state.image_uploaded == False:  # Show the message only if no image is uploaded
-    st.write("Upload a piece of art and explore its artistic siblings! Find hidden connections between your uploaded artwork across styles, colors, themes, and eras!")
+    st.write("Upload a piece of art and explore some possible artistic siblings! Find hidden connections between your uploaded artwork and others across styles, colors, themes, and eras!")
 uploaded_file = st.file_uploader("Upload an artwork:", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
@@ -118,6 +118,5 @@ st.markdown("""
     <p>
             &copy; 2025 Rohan Xavier Gupta |
             <a href="https://github.com/rohanxavier33" target="_blank">GitHub</a> | 
-            <a href="www.linkedin.com/in/rohan-xavier-gupta" target="_blank">LinkedIn</a>
             </p>  </div>
 """, unsafe_allow_html=True)

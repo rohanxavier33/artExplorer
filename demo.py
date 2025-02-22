@@ -58,7 +58,7 @@ st.title("Art Style Explorer 🎨")
 # ===== NEW MODEL SELECTION =====
 selected_model = st.sidebar.radio(
     "Select Clustering Model:",
-    ("K-means - Recommended", "DBSCAN - Experimental"), # "BIRCH - Experimental"
+    ("K-means", "DBSCAN"), # "BIRCH - Experimental"
     index=0,
     help="Choose which clustering algorithm to use for similarity detection"
 )
@@ -107,13 +107,18 @@ if uploaded_file is not None:
     # Get the list of images belonging to the same cluster
     data_dir = "data_sample/preprocessed_images"
     cluster_mapping = load_cluster_mapping(selected_model)
+
+    # Get list of valid image files that exist in cluster_mapping
+    valid_images = [f for f in os.listdir(data_dir) 
+                if f.endswith((".jpg", ".png")) 
+                and f in cluster_mapping.index]
     
     # Handle DBSCAN noise cluster
     if selected_model == "DBSCAN" and cluster == -1:
         st.warning("This artwork is considered noise - showing random artworks")
         cluster_images = os.listdir(data_dir)
     else:
-        cluster_images = [f for f in os.listdir(data_dir) 
+        cluster_images = [f for f in valid_images 
                         if f.endswith((".jpg", ".png")) 
                         and get_cluster_from_filename(f) == cluster]
 

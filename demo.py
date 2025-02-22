@@ -20,20 +20,30 @@ def load_model():
 
 # Cache the loaded k-means clusterer to avoid reloading it
 @st.cache_resource
-def load_clusterer():
-    return joblib.load("kmeans_model.pkl")
+def load_clusterer(model_type):
+    """Modified to support multiple models"""
+    model_paths = {
+        "K-means": "trained_models/kmeans_model.pkl",
+        "DBSCAN": "trained_models/dbscan_model.pkl", 
+        # "BIRCH": "trained_models/birch_model_compressed.pkl",
+    }
+    return joblib.load(model_paths[model_type])
 
 # Cache the loaded cluster assignments mapping to avoid reloading it
 @st.cache_data
-def load_cluster_mapping():
-    return pd.read_csv("cluster_assignments.csv").set_index("filename")
+def load_cluster_mapping(model_type):
+    """Modified to support multiple models"""
+    cluster_files = {
+        "K-means": "cluster_assignments/kmeans_cluster_assignments.csv",
+        "DBSCAN": "cluster_assignments/dbscan_cluster_assignments.csv",
+        # "BIRCH": "cluster_assignments/birch_cluster_assignments.csv",
+    }
+    return pd.read_csv(cluster_files[model_type]).set_index("filename")
+
 
 # Function to get the cluster assignment from a filename
 def get_cluster_from_filename(filename):
     return cluster_mapping.loc[filename, "cluster"]
-
-# Load the cluster assignments mapping
-cluster_mapping = load_cluster_mapping()
 
 # Define the image preprocessing steps
 preprocess = transforms.Compose([
@@ -44,6 +54,14 @@ preprocess = transforms.Compose([
 ])
 
 st.title("Art Style Explorer 🎨")
+
+# ===== NEW MODEL SELECTION =====
+selected_model = st.sidebar.radio(
+    "Select Clustering Model:",
+    ("K-means", "DBSCAN"), # "BIRCH - Experimental"
+    index=0,
+    help="Choose which clustering algorithm to use for similarity detection"
+)
 
 # Initialize a session state variable to track if an image is uploaded
 if "image_uploaded" not in st.session_state:
@@ -60,7 +78,7 @@ if uploaded_file is not None:
     st.session_state.image_uploaded = True
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    st.write(f"### Similar Artworks")
+    st.write(f"### Similar Artworks (Using {selected_model})")  # Modified title
 
     # Sidebar widgets
     num_images = st.sidebar.slider(
@@ -70,26 +88,46 @@ if uploaded_file is not None:
         value=5,
         help="Choose how many similar artworks from the cluster you want to see"
     )
+    
     # Extract the feature embedding from the uploaded image using the loaded model
     with torch.no_grad(): # Disable gradient calculation for inference
         img_tensor = preprocess(image).unsqueeze(0) # Preprocess the image and add a batch dimension
         embedding = load_model()(img_tensor).squeeze().numpy() # Get the feature embedding and convert it to a NumPy array
     
+        
     # Load the clusterer and predict the cluster for the uploaded image
-    clusterer = load_clusterer()
-    cluster = clusterer.predict(embedding.reshape(1, -1))[0]
+    clusterer = load_clusterer(selected_model)
+    
+    # Handle DBSCAN's fit_predict vs others' predict
+    if selected_model == "DBSCAN":
+        cluster = clusterer.fit_predict(embedding.reshape(1, -1))[0]
+    else:
+        cluster = clusterer.predict(embedding.reshape(1, -1))[0]
     
     # Get the list of images belonging to the same cluster
     data_dir = "data_sample/preprocessed_images"
-    cluster_images = [f for f in os.listdir(data_dir) 
-                    if f.endswith((".jpg", ".png")) and get_cluster_from_filename(f) == cluster]
+    cluster_mapping = load_cluster_mapping(selected_model)
+
+    # Get list of valid image files that exist in cluster_mapping
+    valid_images = [f for f in os.listdir(data_dir) 
+                if f.endswith((".jpg", ".png")) 
+                and f in cluster_mapping.index]
+    
+    # Handle DBSCAN noise cluster
+    if selected_model == "DBSCAN" and cluster == -1:
+        st.warning("This artwork is considered noise - showing random artworks")
+        cluster_images = os.listdir(data_dir)
+    else:
+        cluster_images = [f for f in valid_images 
+                        if f.endswith((".jpg", ".png")) 
+                        and get_cluster_from_filename(f) == cluster]
 
     display_count = min(num_images, len(cluster_images))
     if display_count < num_images:
         st.warning(f"Only {len(cluster_images)} images available in this cluster")
     
     # Randomly sample images from the cluster
-    sample_images = np.random.choice(cluster_images, display_count, replace=False)
+    sample_images = random.sample(cluster_images, display_count) if cluster_images else []
 
     # Second sidebar widget
     columns_per_row = st.sidebar.slider(

@@ -1,3 +1,4 @@
 /data_full
 /data_sample/raw
 embeddings.npy
+trained_models/birch_model.pkl

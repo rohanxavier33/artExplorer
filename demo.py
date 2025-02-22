@@ -3,7 +3,7 @@
 import streamlit as st
 import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from torchvision import models, transforms
 import joblib
 import os
@@ -45,6 +45,37 @@ def load_cluster_mapping(model_type):
 def get_cluster_from_filename(filename):
     return cluster_mapping.loc[filename, "cluster"]
 
+def validate_image(uploaded_file):
+    """Thoroughly validate an uploaded image file"""
+    try:
+        # Check 1: Verify file signature (magic numbers)
+        if uploaded_file.type not in ["image/jpeg", "image/png"]:
+            return False, "Invalid file type (must be JPG/PNG)"
+        
+        # Check 2: Attempt to open and verify image integrity
+        with Image.open(uploaded_file) as img:
+            # Check 3: Verify image format without loading pixels
+            img.verify()
+            
+            # Check 4: Reset file pointer after verification
+            uploaded_file.seek(0)
+            
+            # Check 5: Reopen for proper processing
+            img = Image.open(uploaded_file)
+            
+            # Check 6: Ensure RGB mode and valid dimensions
+            if img.mode not in ["RGB", "L"]:
+                return False, "Image must be RGB or grayscale"
+            if min(img.size) < 50:
+                return False, "Image too small (min 50px)"
+            
+            return True, img.convert("RGB")
+            
+    except UnidentifiedImageError:
+        return False, "Corrupted or invalid image file"
+    except Exception as e:
+        return False, f"Image validation failed: {str(e)}"
+
 # Define the image preprocessing steps
 preprocess = transforms.Compose([
     transforms.Resize(256), # Resize the image to 256x256
@@ -63,10 +94,10 @@ selected_model = st.sidebar.radio(
     help="Choose which clustering algorithm to use for similarity detection"
 )
 if selected_model == "K-means":
-    st.sidebar.markdown("*🔥 Recommended for most use cases*")
+    st.sidebar.markdown("*🔥 K-means is recommended for most use cases*")
 elif selected_model == "DBSCAN":
-    st.sidebar.markdown("*Experimental: May show random images for noise clusters*")
-    
+    st.sidebar.markdown("*DBSCAN is experimental: May show random images for noise clusters*")
+
 # Initialize a session state variable to track if an image is uploaded
 if "image_uploaded" not in st.session_state:
     st.session_state.image_uploaded = False
@@ -79,10 +110,18 @@ uploaded_file = st.file_uploader("Upload an artwork:", type=["jpg", "png", "jpeg
 
 # If an image is uploaded
 if uploaded_file is not None:
+    
+    is_valid, validation_result = validate_image(uploaded_file)
+    
+    if not is_valid:
+        st.error(f"🚨 Invalid Image: {validation_result}")
+        st.session_state.image_uploaded = False
+        uploaded_file = None
+        st.stop()
+    
+    image = validation_result  # The converted RGB image
     st.session_state.image_uploaded = True
-    image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    st.write(f"### Similar Artworks (Using {selected_model})")  # Modified title
 
     # Sidebar widgets
     num_images = st.sidebar.slider(
@@ -144,15 +183,28 @@ if uploaded_file is not None:
 
     num_images = len(sample_images)
     
+    # Display the images in a grid with error handling
     for i in range(0, num_images, columns_per_row):
         cols = st.columns(columns_per_row)
         for j in range(columns_per_row):
             idx = i + j
             if idx < num_images:
                 img_path = os.path.join(data_dir, sample_images[idx])
-                cols[j].image(img_path, use_container_width=True)
-            else:
-                cols[j].empty()
+                
+                try:
+                    # First verify the image can be opened
+                    with Image.open(img_path) as img:
+                        img.verify()  # Quick check without loading pixel data
+                    
+                    # Then display it
+                    cols[j].image(img_path, use_container_width=True)
+                    
+                except Exception as e:
+                    # Handle invalid images
+                    cols[j].error(f"Couldn't load image")
+                    # Remove problematic image from sample list to prevent recurrence
+                    sample_images.pop(idx)
+                    num_images = len(sample_images)
 
 # Footer
 st.markdown("""

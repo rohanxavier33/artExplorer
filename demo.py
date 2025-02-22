@@ -25,7 +25,7 @@ def load_clusterer(model_type):
     model_paths = {
         "K-means": "trained_models/kmeans_model.pkl",
         "DBSCAN": "trained_models/dbscan_model.pkl", 
-        "BIRCH": "trained_models/birch_model_compressed.pkl",
+        # "BIRCH": "trained_models/birch_model_compressed.pkl",
     }
     return joblib.load(model_paths[model_type])
 
@@ -36,7 +36,7 @@ def load_cluster_mapping(model_type):
     cluster_files = {
         "K-means": "cluster_assignments/kmeans_cluster_assignments.csv",
         "DBSCAN": "cluster_assignments/dbscan_cluster_assignments.csv",
-        "BIRCH": "cluster_assignments/birch_cluster_assignments.csv",
+        # "BIRCH": "cluster_assignments/birch_cluster_assignments.csv",
     }
     return pd.read_csv(cluster_files[model_type]).set_index("filename")
 
@@ -58,7 +58,7 @@ st.title("Art Style Explorer 🎨")
 # ===== NEW MODEL SELECTION =====
 selected_model = st.sidebar.radio(
     "Select Clustering Model:",
-    ("K-means - Recommended", "BIRCH", "DBSCAN - Experimental"),
+    ("K-means - Recommended", "DBSCAN - Experimental"), # "BIRCH - Experimental"
     index=0,
     help="Choose which clustering algorithm to use for similarity detection"
 )

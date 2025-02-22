@@ -55,14 +55,18 @@ preprocess = transforms.Compose([
 
 st.title("Art Style Explorer 🎨")
 
-# ===== NEW MODEL SELECTION =====
+# Model selection
 selected_model = st.sidebar.radio(
     "Select Clustering Model:",
-    ("K-means", "DBSCAN"), # "BIRCH - Experimental"
+    ("K-means", "DBSCAN"), # "BIRCH"
     index=0,
     help="Choose which clustering algorithm to use for similarity detection"
 )
-
+if selected_model == "K-means":
+    st.sidebar.markdown("*🔥 Recommended for most use cases*")
+elif selected_model == "DBSCAN":
+    st.sidebar.markdown("*Experimental: May show random images for noise clusters*")
+    
 # Initialize a session state variable to track if an image is uploaded
 if "image_uploaded" not in st.session_state:
     st.session_state.image_uploaded = False

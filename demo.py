@@ -28,7 +28,7 @@ def get_google_drive_images(folder_id, output_dir="gdrive_images"):
                 "https://drive.google.com/drive/folders/" + "1Gd9rDRee95CoX76alzkaIgXAAMqPdnde",
                 output=output_dir,
                 quiet=False,
-                use_cookies=False,
+                use_cookies=True,
                 remaining_ok=True  # Continue on errors
             )
             

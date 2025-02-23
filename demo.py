@@ -13,59 +13,37 @@ import gdown
 
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
-def get_google_drive_images(folder_id, cluster_mapping, output_dir="gdrive_images"):
+def get_google_drive_images(folder_id, output_dir="gdrive_images"):
     
     """Download only images that exist in cluster mapping"""
     st.info("📥 Initiating Google Drive download...")
     
-    # Create output directory
+    # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    # Get required files
-    required_files = set(cluster_mapping.index.tolist())
-    if not required_files:
-        st.warning("⚠️ No files needed for download - check cluster mapping")
-        return output_dir, []
-
-    # Get folder metadata
-    with st.spinner(f"🔍 Scanning Google Drive folder (https://drive.google.com/drive/folders/{folder_id}) contents..."):
-        url = f"https://drive.google.com/drive/folders/{folder_id}"
-        files = gdown.download_folder(url, output=output_dir, quiet=True, 
-                                    use_cookies=False, metadata=True)
-
-    # Filter files first for better progress accuracy
-    files_to_download = [f for f in files if f["name"] in required_files]
-    total_to_download = len(files_to_download)
-    
-    # Download with progress
-    downloaded_files = []
-    if files_to_download:
-        progress_bar = st.progress(0, text="Starting downloads...")
-        
-        for idx, file in enumerate(files_to_download, 1):
-            progress = idx / total_to_download
-            progress_bar.progress(progress, 
-                                 text=f"Downloading {file['name']} ({idx}/{total_to_download})")
-            
-            gdown.download(
-                f'https://drive.google.com/uc?id={file["id"]}',
-                output=os.path.join(output_dir, file["name"]),
-                quiet=True
+    with st.spinner(f"📦 Downloading entire folder contents from Google Drive..."):
+        try:
+            # Download all contents recursively
+            gdown.download_folder(
+                f"https://drive.google.com/drive/folders/{folder_id}",
+                output=output_dir,
+                quiet=True,
+                use_cookies=False,
+                remaining_ok=True  # Continue on errors
             )
-            downloaded_files.append(file["name"])
-            st.toast(f"✅ Downloaded {file['name']}", icon="✅")
             
-        progress_bar.progress(1.0, text="Download complete!")
+            # Get list of successfully downloaded files
+            downloaded_files = []
+            for root, _, files in os.walk(output_dir):
+                for file in files:
+                    downloaded_files.append(os.path.relpath(os.path.join(root, file), output_dir))
             
+            st.success(f"✅ Successfully downloaded {len(downloaded_files)} files!")
+            return output_dir, downloaded_files
 
-    # Final status
-    missing = required_files - set(downloaded_files)
-    if missing:
-        st.error(f"❌ Missing {len(missing)} files: {', '.join(list(missing)[:3])}...")
-    else:
-        st.success(f"✅ Success! Downloaded {len(downloaded_files)} files")
-    
-    return output_dir, downloaded_files
+        except Exception as e:
+            st.error(f"❌ Download failed: {str(e)}")
+            return output_dir, []
 
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource
@@ -198,7 +176,7 @@ if uploaded_file is not None:
     
     # Get the list of images belonging to the same cluster
     cluster_mapping = load_cluster_mapping(selected_model)
-    data_dir, downloaded_files = get_google_drive_images("1zeFllFlaiQfkKUPSnu24CmRanRFN6eaK", cluster_mapping)
+    data_dir, downloaded_files = get_google_drive_images("1zeFllFlaiQfkKUPSnu24CmRanRFN6eaK")
    
     cluster_images = [f for f in downloaded_files
                     if f in cluster_mapping.index

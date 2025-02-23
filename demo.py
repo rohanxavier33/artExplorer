@@ -9,6 +9,63 @@ import joblib
 import os
 import pandas as pd
 import random
+import gdown
+
+# Cache the loaded images from Google Drive to avoid redownloading them on every run
+@st.cache_data
+def get_google_drive_images(folder_id, cluster_mapping, output_dir="gdrive_images"):
+    
+    """Download only images that exist in cluster mapping"""
+    st.info("📥 Initiating Google Drive download...")
+    
+    # Create output directory
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Get required files
+    required_files = set(cluster_mapping.index.tolist())
+    if not required_files:
+        st.warning("⚠️ No files needed for download - check cluster mapping")
+        return output_dir, []
+
+    # Get folder metadata
+    with st.spinner("🔍 Scanning Google Drive folder contents..."):
+        url = f"https://drive.google.com/drive/folders/{folder_id}"
+        files = gdown.download_folder(url, output=output_dir, quiet=True, 
+                                    use_cookies=False, metadata=True)
+
+    # Filter files first for better progress accuracy
+    files_to_download = [f for f in files if f["name"] in required_files]
+    total_to_download = len(files_to_download)
+    
+    # Download with progress
+    downloaded_files = []
+    if files_to_download:
+        progress_bar = st.progress(0, text="Starting downloads...")
+        
+        for idx, file in enumerate(files_to_download, 1):
+            progress = idx / total_to_download
+            progress_bar.progress(progress, 
+                                 text=f"Downloading {file['name']} ({idx}/{total_to_download})")
+            
+            gdown.download(
+                f'https://drive.google.com/uc?id={file["id"]}',
+                output=os.path.join(output_dir, file["name"]),
+                quiet=True
+            )
+            downloaded_files.append(file["name"])
+            st.toast(f"✅ Downloaded {file['name']}", icon="✅")
+            
+        progress_bar.progress(1.0, text="Download complete!")
+            
+
+    # Final status
+    missing = required_files - set(downloaded_files)
+    if missing:
+        st.error(f"❌ Missing {len(missing)} files: {', '.join(list(missing)[:3])}...")
+    else:
+        st.success(f"✅ Success! Downloaded {len(downloaded_files)} files")
+    
+    return output_dir, downloaded_files
 
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource
@@ -24,7 +81,7 @@ def load_clusterer(model_type):
     """Modified to support multiple models"""
     model_paths = {
         "K-means": "trained_models/kmeans_model.pkl",
-        "DBSCAN": "trained_models/dbscan_model.pkl", 
+        # "DBSCAN": "trained_models/dbscan_model.pkl",
         # "BIRCH": "trained_models/birch_model_compressed.pkl",
     }
     return joblib.load(model_paths[model_type])
@@ -35,16 +92,16 @@ def load_cluster_mapping(model_type):
     """Modified to support multiple models"""
     cluster_files = {
         "K-means": "cluster_assignments/kmeans_cluster_assignments.csv",
-        "DBSCAN": "cluster_assignments/dbscan_cluster_assignments.csv",
+        # "DBSCAN": "cluster_assignments/dbscan_cluster_assignments.csv",
         # "BIRCH": "cluster_assignments/birch_cluster_assignments.csv",
     }
     return pd.read_csv(cluster_files[model_type]).set_index("filename")
-
 
 # Function to get the cluster assignment from a filename
 def get_cluster_from_filename(filename):
     return cluster_mapping.loc[filename, "cluster"]
 
+# Function to validate images
 def validate_image(uploaded_file):
     """Thoroughly validate an uploaded image file"""
     try:
@@ -86,17 +143,14 @@ preprocess = transforms.Compose([
 
 st.title("Art Style Explorer 🎨")
 
-# Model selection
-selected_model = st.sidebar.radio(
-    "Select Clustering Model:",
-    ("K-means", "DBSCAN"), # "BIRCH"
-    index=0,
-    help="Choose which clustering algorithm to use for similarity detection"
-)
-if selected_model == "K-means":
-    st.sidebar.markdown("*🔥 K-means is recommended for most use cases*")
-elif selected_model == "DBSCAN":
-    st.sidebar.markdown("*DBSCAN is experimental: May show random images for noise clusters*")
+# Model selection (commented out since only K-means remains)
+# selected_model = st.sidebar.radio(
+#     "Select Clustering Model:",
+#     ("K-means",), # Removed DBSCAN, kept BIRCH commented
+#     index=0,
+#     help="Choose which clustering algorithm to use for similarity detection"
+# )
+selected_model = "K-means"  # Default to only available model
 
 # Initialize a session state variable to track if an image is uploaded
 if "image_uploaded" not in st.session_state:
@@ -127,7 +181,7 @@ if uploaded_file is not None:
     num_images = st.sidebar.slider(
         "Number of similar artworks to show:",
         min_value=1,
-        max_value=100,
+        max_value=25,
         value=5,
         help="Choose how many similar artworks from the cluster you want to see"
     )
@@ -140,31 +194,15 @@ if uploaded_file is not None:
         
     # Load the clusterer and predict the cluster for the uploaded image
     clusterer = load_clusterer(selected_model)
-    
-    # Handle DBSCAN's fit_predict vs others' predict
-    if selected_model == "DBSCAN":
-        cluster = clusterer.fit_predict(embedding.reshape(1, -1))[0]
-    else:
-        cluster = clusterer.predict(embedding.reshape(1, -1))[0]
+    cluster = clusterer.predict(embedding.reshape(1, -1))[0]
     
     # Get the list of images belonging to the same cluster
-    data_dir = "data_sample/preprocessed_images"
     cluster_mapping = load_cluster_mapping(selected_model)
-
-    # Get list of valid image files that exist in cluster_mapping
-    valid_images = [f for f in os.listdir(data_dir) 
-                if f.endswith((".jpg", ".png")) 
-                and f in cluster_mapping.index]
-    
-    # Handle DBSCAN noise cluster
-    if selected_model == "DBSCAN" and cluster == -1:
-        st.warning("This artwork is considered noise - showing random artworks")
-        cluster_images = os.listdir(data_dir)
-    else:
-        cluster_images = [f for f in valid_images 
-                        if f.endswith((".jpg", ".png")) 
-                        and get_cluster_from_filename(f) == cluster]
-
+    data_dir, downloaded_files = get_google_drive_images("1zeFllFlaiQfkKUPSnu24CmRanRFN6eaK", cluster_mapping)
+   
+    cluster_images = [f for f in downloaded_files
+                    if f in cluster_mapping.index
+                    and get_cluster_from_filename(f) == cluster]
     display_count = min(num_images, len(cluster_images))
     if display_count < num_images:
         st.warning(f"Only {len(cluster_images)} images available in this cluster")
@@ -176,7 +214,7 @@ if uploaded_file is not None:
     columns_per_row = st.sidebar.slider(
         "Images per row:",
         min_value=1,
-        max_value=8,
+        max_value=10,
         value=5,
         help="Control how many artworks are shown per row" 
     )
@@ -184,29 +222,47 @@ if uploaded_file is not None:
     num_images = len(sample_images)
     
     # Display the images in a grid with error handling
+if sample_images:
+    # Add refresh button to sidebar
+    if st.sidebar.button("🔄 Refresh Images", help="Show new random selection from this cluster"):
+        # Force new random sample by clearing cached selection
+        if "current_sample" in st.session_state:
+            del st.session_state.current_sample
+    
+    # Store/Load current sample in session state
+    if "current_sample" not in st.session_state or st.session_state.get("prev_cluster") != cluster:
+        st.session_state.current_sample = sample_images
+        st.session_state.prev_cluster = cluster  # Track cluster changes
+    
+    # Display images using stored sample
+    num_images = len(st.session_state.current_sample)
+    
+    # Create grid display
     for i in range(0, num_images, columns_per_row):
         cols = st.columns(columns_per_row)
         for j in range(columns_per_row):
             idx = i + j
             if idx < num_images:
-                img_path = os.path.join(data_dir, sample_images[idx])
-                
+                img_name = st.session_state.current_sample[idx]
+                img_path = os.path.join(data_dir, img_name)
                 try:
-                    # First verify the image can be opened
-                    with Image.open(img_path) as img:
-                        img.verify()  # Quick check without loading pixel data
-                    
-                    # Then display it
-                    cols[j].image(img_path, use_container_width=True)
-                    
+                    cols[j].image(img_path, 
+                                 use_container_width=True,
+                                 caption=img_name)
                 except Exception as e:
-                    # Handle invalid images
-                    cols[j].error(f"Couldn't load image")
-                    # Remove problematic image from sample list to prevent recurrence
-                    sample_images.pop(idx)
-                    num_images = len(sample_images)
+                    # Silently replace bad images with new ones
+                    new_candidates = [f for f in cluster_images 
+                                     if f not in st.session_state.current_sample]
+                    if new_candidates:
+                        replacement = random.choice(new_candidates)
+                        st.session_state.current_sample[idx] = replacement
+                        cols[j].image(os.path.join(data_dir, replacement),
+                                    use_container_width=True,
+                                    caption=replacement)
+                    else:
+                        cols[j].empty()
 
-# Footer
+# Footer (unchanged)
 st.markdown("""
 <style>
 .footer {

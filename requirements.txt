@@ -11,3 +11,4 @@ kagglehub
 ipython
 streamlit
 pandas
+gdown

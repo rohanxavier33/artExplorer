@@ -25,9 +25,9 @@ def get_google_drive_images(folder_id, output_dir="gdrive_images"):
         try:
             # Download all contents recursively
             gdown.download_folder(
-                f"https://drive.google.com/drive/folders/1Gd9rDRee95CoX76alzkaIgXAAMqPdnde",
+                "https://drive.google.com/drive/folders/" + "1Gd9rDRee95CoX76alzkaIgXAAMqPdnde",
                 output=output_dir,
-                quiet=True,
+                quiet=False,
                 use_cookies=False,
                 remaining_ok=True  # Continue on errors
             )

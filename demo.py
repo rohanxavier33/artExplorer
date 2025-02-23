@@ -176,7 +176,7 @@ if uploaded_file is not None:
     
     # Get the list of images belonging to the same cluster
     cluster_mapping = load_cluster_mapping(selected_model)
-    data_dir, downloaded_files = get_google_drive_images("1zeFllFlaiQfkKUPSnu24CmRanRFN6eaK")
+    data_dir, downloaded_files = get_google_drive_images("1Gd9rDRee95CoX76alzkaIgXAAMqPdnde")
    
     cluster_images = [f for f in downloaded_files
                     if f in cluster_mapping.index

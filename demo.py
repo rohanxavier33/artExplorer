@@ -221,14 +221,14 @@ if uploaded_file is not None:
 
     num_images = len(sample_images)
     
-    # Display the images in a grid with error handling
-if sample_images:
-    # Add refresh button to sidebar
-    if st.sidebar.button("🔄 Refresh Images", help="Show new random selection from this cluster"):
-        # Force new random sample by clearing cached selection
-        if "current_sample" in st.session_state:
-            del st.session_state.current_sample
-    
+        # Display the images in a grid with error handling
+    if sample_images:
+        # Add refresh button to sidebar
+        if st.sidebar.button("🔄 Refresh Images", help="Show new random selection from this cluster"):
+            # Force new random sample by clearing cached selection
+            if "current_sample" in st.session_state:
+                del st.session_state.current_sample
+        
     # Store/Load current sample in session state
     if "current_sample" not in st.session_state or st.session_state.get("prev_cluster") != cluster:
         st.session_state.current_sample = sample_images

@@ -28,7 +28,7 @@ def get_google_drive_images(folder_id, cluster_mapping, output_dir="gdrive_image
         return output_dir, []
 
     # Get folder metadata
-    with st.spinner("🔍 Scanning Google Drive folder contents..."):
+    with st.spinner(f"🔍 Scanning Google Drive folder (https://drive.google.com/drive/folders/{folder_id}) contents..."):
         url = f"https://drive.google.com/drive/folders/{folder_id}"
         files = gdown.download_folder(url, output=output_dir, quiet=True, 
                                     use_cookies=False, metadata=True)
@@ -80,7 +80,7 @@ def load_model():
 def load_clusterer(model_type):
     """Modified to support multiple models"""
     model_paths = {
-        "K-means": "trained_models/kmeans_model.pkl",
+        "K-means": "trained_models/full_kmeans_model.pkl",
         # "DBSCAN": "trained_models/dbscan_model.pkl",
         # "BIRCH": "trained_models/birch_model_compressed.pkl",
     }
@@ -91,7 +91,7 @@ def load_clusterer(model_type):
 def load_cluster_mapping(model_type):
     """Modified to support multiple models"""
     cluster_files = {
-        "K-means": "cluster_assignments/kmeans_cluster_assignments.csv",
+        "K-means": "cluster_assignments/full_kmeans_cluster_assignments.csv",
         # "DBSCAN": "cluster_assignments/dbscan_cluster_assignments.csv",
         # "BIRCH": "cluster_assignments/birch_cluster_assignments.csv",
     }

@@ -5,3 +5,4 @@ embeddings.npy
 trained_models/birch_model.pkl
 gDrive.py
 helper.ipynb
+trained_models/full_birch_model_compressed.pkl

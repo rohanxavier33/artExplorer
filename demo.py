@@ -15,47 +15,54 @@ from zipfile import ZipFile
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
 def get_google_drive_images(output_dir="gdrive_images"):
-    
-    os.makedirs(output_dir, exist_ok=True)
+    if not os.path.exists(output_dir):
+        base_dir = "/mount/src/art_style_grouping" # The KNOWN working directory
+        download_path = os.path.join(base_dir, output_dir)  # Explicitly join!
+        st.write(f"Download path: {download_path}") # Verify!
 
-    try:
-        gdown.download_folder(
-            "https://drive.google.com/drive/folders/" + "1VanQf88QtskwH6I1z-Ut8oZst5ovuwKy",
-            output=output_dir,
-            quiet=False,
-            use_cookies=True,
-            remaining_ok=True
-        )
+        os.makedirs(download_path, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
-        st.success("✅ Successfully downloaded files!")
+        try:
+            gdown.download_folder(
+                "https://drive.google.com/drive/folders/" + "1VanQf88QtskwH6I1z-Ut8oZst5ovuwKy",
+                output=output_dir,
+                quiet=False,
+                use_cookies=True,
+                remaining_ok=True
+            )
 
-        zip_file_path = os.path.join(output_dir, "preprocessed_images.zip")  # Direct path
-        st.write(f"Zip file path: {zip_file_path}")  # Verify path
+            st.success("✅ Successfully downloaded files!")
 
-        if not os.path.exists(zip_file_path):
-            raise FileNotFoundError(f"Zip file not found at: {zip_file_path}")
+            zip_file_path = os.path.join(output_dir, "preprocessed_images.zip")  # Direct path
+            st.write(f"Zip file path: {zip_file_path}")  # Verify path
 
-        extracted_dir = os.path.join(output_dir, "preprocessed_images") # Path to extracted images
-        st.write(f"Extraction directory: {extracted_dir}") # Verify path
+            if not os.path.exists(zip_file_path):
+                raise FileNotFoundError(f"Zip file not found at: {zip_file_path}")
 
-        with st.spinner("Unzipping files"):
-            with ZipFile(zip_file_path, "r") as zip_ref:
-                zip_ref.extractall(output_dir)  # Extract to gdrive_images
+            extracted_dir = os.path.join(output_dir, "preprocessed_images") # Path to extracted images
+            st.write(f"Extraction directory: {extracted_dir}") # Verify path
 
-            st.success("✅ Successfully unzipped files!")
-        
-        if not os.path.exists(extracted_dir):
-            st.error(f"Extraction failed. Directory not found: {extracted_dir}")
+            with st.spinner("Unzipping files"):
+                with ZipFile(zip_file_path, "r") as zip_ref:
+                    zip_ref.extractall(output_dir)  # Extract to gdrive_images
+
+                st.success("✅ Successfully unzipped files!")
+            
+            if not os.path.exists(extracted_dir):
+                st.error(f"Extraction failed. Directory not found: {extracted_dir}")
+                return output_dir, []
+
+            os.remove(zip_file_path) # delete the zip
+            downloaded_files = os.listdir(extracted_dir)
+            return extracted_dir, downloaded_files  # Return the correct path!
+
+        except Exception as e:
+            st.error(f"❌ Download or unzip failed: {str(e)}")
             return output_dir, []
-
-        os.remove(zip_file_path) # delete the zip
-        downloaded_files = os.listdir(extracted_dir)
-        return extracted_dir, downloaded_files  # Return the correct path!
-
-    except Exception as e:
-        st.error(f"❌ Download or unzip failed: {str(e)}")
-        return output_dir, []
-
+    else:
+        downloaded_files = os.listdir(output_dir)
+        return output_dir, downloaded_files
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource
 def load_model():

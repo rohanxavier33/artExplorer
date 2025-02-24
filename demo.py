@@ -15,6 +15,7 @@ from zipfile import ZipFile
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
 def get_google_drive_images(output_dir="gdrive_images"):
+    
     os.makedirs(output_dir, exist_ok=True)
 
     try:
@@ -28,35 +29,31 @@ def get_google_drive_images(output_dir="gdrive_images"):
 
         st.success("✅ Successfully downloaded files!")
 
-        
-        zip_file_path = None
-        for root, _, files in os.walk(output_dir):  # Walk the directory tree
-            for file in files:
-                if file == "preprocessed_images.zip":
-                    zip_file_path = os.path.join(root, file)
-                    break  # Found it!
-            if zip_file_path:
-                break  # Found it!
+        zip_file_path = os.path.join(output_dir, "preprocessed_images.zip")  # Direct path
+        st.write(f"Zip file path: {zip_file_path}")  # Verify path
 
-        if not zip_file_path:
-            raise FileNotFoundError("preprocessed_images.zip not found in downloaded files")
+        if not os.path.exists(zip_file_path):
+            raise FileNotFoundError(f"Zip file not found at: {zip_file_path}")
 
-        st.write(f"Found zip file at: {zip_file_path}") # See the path in streamlit output
-
-        output_dir_for_zip = os.path.dirname(zip_file_path) # Extract the directory of the zip file
+        extracted_dir = os.path.join(output_dir, "preprocessed_images") # Path to extracted images
+        st.write(f"Extraction directory: {extracted_dir}") # Verify path
 
         with st.spinner("Unzipping files"):
             with ZipFile(zip_file_path, "r") as zip_ref:
-                zip_ref.extractall(output_dir_for_zip)  # Extract to the same directory as the zip
+                zip_ref.extractall(output_dir)  # Extract to gdrive_images
 
             st.success("✅ Successfully unzipped files!")
+        
+        if not os.path.exists(extracted_dir):
+            st.error(f"Extraction failed. Directory not found: {extracted_dir}")
+            return output_dir, []
 
         os.remove(zip_file_path) # delete the zip
-        downloaded_files = os.listdir(os.path.join(output_dir_for_zip,"preprocessed_images")) # Get files from the extracted directory
-        return output_dir_for_zip, downloaded_files # Return the directory where the images are
+        downloaded_files = os.listdir(extracted_dir)
+        return extracted_dir, downloaded_files  # Return the correct path!
 
     except Exception as e:
-        st.error(f"❌ Download failed: {str(e)}")
+        st.error(f"❌ Download or unzip failed: {str(e)}")
         return output_dir, []
 
 # Cache the loaded ResNet50 model to avoid reloading it on every run
@@ -191,7 +188,7 @@ if uploaded_file is not None:
     # Get the list of images belonging to the same cluster
     cluster_mapping = load_cluster_mapping(selected_model)
     data_dir, downloaded_files = get_google_drive_images()
-   
+       
     cluster_images = [f for f in downloaded_files
                     if f in cluster_mapping.index
                     and get_cluster_from_filename(f) == cluster]

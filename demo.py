@@ -15,7 +15,6 @@ from zipfile import ZipFile
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
 def get_google_drive_images(output_dir="gdrive_images"):
-    if not os.path.exists(output_dir):
         base_dir = "/mount/src/art_style_grouping" # The KNOWN working directory
         download_path = os.path.join(base_dir, output_dir)  # Explicitly join!
 
@@ -31,7 +30,9 @@ def get_google_drive_images(output_dir="gdrive_images"):
                 remaining_ok=True
             )
 
+
             zip_file_path = os.path.join(output_dir, "preprocessed_images.zip")  # Direct path
+     
 
             if not os.path.exists(zip_file_path):
                 raise FileNotFoundError(f"Zip file not found at: {zip_file_path}")
@@ -42,6 +43,7 @@ def get_google_drive_images(output_dir="gdrive_images"):
                 with ZipFile(zip_file_path, "r") as zip_ref:
                     zip_ref.extractall(output_dir)  # Extract to gdrive_images
 
+            
             
             if not os.path.exists(extracted_dir):
                 st.error(f"Extraction failed. Directory not found: {extracted_dir}")
@@ -54,10 +56,6 @@ def get_google_drive_images(output_dir="gdrive_images"):
         except Exception as e:
             st.error(f"❌ Download or unzip failed: {str(e)}")
             return output_dir, []
-    else:
-        downloaded_files = os.listdir(output_dir)
-        return output_dir, downloaded_files
-    
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource
 def load_model():
@@ -248,7 +246,7 @@ if uploaded_file is not None:
                     if new_candidates:
                         replacement = random.choice(new_candidates)
                         st.session_state.current_sample[idx] = replacement
-                        cols[j].image(os.path.join(r'gdrive_images\preprocessed_images', replacement),
+                        cols[j].image(os.path.join('gdrive_images\preprocessed_images', replacement),
                                     use_container_width=True,
                                     caption=replacement)
                     else:

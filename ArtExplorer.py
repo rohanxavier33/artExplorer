@@ -170,7 +170,7 @@ if uploaded_file is not None:
     num_images = st.sidebar.slider(
         "Number of similar artworks to show:",
         min_value=1,
-        max_value=25,
+        max_value=100,
         value=5,
         help="Choose how many similar artworks from the cluster you want to see"
     )

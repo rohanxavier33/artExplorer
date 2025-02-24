@@ -45,8 +45,8 @@ def get_google_drive_images(output_dir="gdrive_images"):
                     
                 st.success("✅ Successfully unzipped files!")
             # delete the zip file
-            os.remove(r"gdrive_images\preprocessed_images.zip")
-            downloaded_files = os.listdir(r'gdrive_images\preprocessed_images')
+            os.remove(f"{output_dir}\preprocessed_images.zip")
+            downloaded_files = os.listdir(f'{output_dir}\preprocessed_images')
             return output_dir, downloaded_files
 
         except Exception as e:
@@ -242,7 +242,7 @@ if uploaded_file is not None:
                     if new_candidates:
                         replacement = random.choice(new_candidates)
                         st.session_state.current_sample[idx] = replacement
-                        cols[j].image(os.path.join(r'C:\Users\RohanGupta\Documents\vscode\ml2\art_style_fixer\art_style_grouping\gdrive_images\preprocessed_images', replacement),
+                        cols[j].image(os.path.join(f'gdrive_images\preprocessed_images', replacement),
                                     use_container_width=True,
                                     caption=replacement)
                     else:

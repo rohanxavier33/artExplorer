@@ -18,7 +18,6 @@ def get_google_drive_images(output_dir="gdrive_images"):
     if not os.path.exists(output_dir):
         base_dir = "/mount/src/art_style_grouping" # The KNOWN working directory
         download_path = os.path.join(base_dir, output_dir)  # Explicitly join!
-        st.write(f"Download path: {download_path}") # Verify!
 
         os.makedirs(download_path, exist_ok=True)
         os.makedirs(output_dir, exist_ok=True)
@@ -32,22 +31,17 @@ def get_google_drive_images(output_dir="gdrive_images"):
                 remaining_ok=True
             )
 
-            st.success("✅ Successfully downloaded files!")
-
             zip_file_path = os.path.join(output_dir, "preprocessed_images.zip")  # Direct path
-            st.write(f"Zip file path: {zip_file_path}")  # Verify path
 
             if not os.path.exists(zip_file_path):
                 raise FileNotFoundError(f"Zip file not found at: {zip_file_path}")
 
             extracted_dir = os.path.join(output_dir, "preprocessed_images") # Path to extracted images
-            st.write(f"Extraction directory: {extracted_dir}") # Verify path
 
             with st.spinner("Unzipping files"):
                 with ZipFile(zip_file_path, "r") as zip_ref:
                     zip_ref.extractall(output_dir)  # Extract to gdrive_images
 
-                st.success("✅ Successfully unzipped files!")
             
             if not os.path.exists(extracted_dir):
                 st.error(f"Extraction failed. Directory not found: {extracted_dir}")
@@ -63,6 +57,7 @@ def get_google_drive_images(output_dir="gdrive_images"):
     else:
         downloaded_files = os.listdir(output_dir)
         return output_dir, downloaded_files
+    
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource
 def load_model():
@@ -253,7 +248,7 @@ if uploaded_file is not None:
                     if new_candidates:
                         replacement = random.choice(new_candidates)
                         st.session_state.current_sample[idx] = replacement
-                        cols[j].image(os.path.join(f'gdrive_images\preprocessed_images', replacement),
+                        cols[j].image(os.path.join(r'gdrive_images\preprocessed_images', replacement),
                                     use_container_width=True,
                                     caption=replacement)
                     else:

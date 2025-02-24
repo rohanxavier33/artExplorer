@@ -130,7 +130,7 @@ preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # Normalize the tensor
 ])
 
-st.title('Art Style Explorer 🎨')
+st.title('Art Explorer 🎨')
 
 # Model selection (commented out since only K-means remains)
 # selected_model = st.sidebar.radio(

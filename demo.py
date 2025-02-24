@@ -15,43 +15,49 @@ from zipfile import ZipFile
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
 def get_google_drive_images(output_dir="gdrive_images"):
-    
-    """Download only images that exist in cluster mapping"""
-    
-    # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
-    
-    with st.spinner(f"📦 Downloading entire folder contents from Google Drive..."):
-        try:
-            # Download all contents recursively
-            gdown.download_folder(
-                "https://drive.google.com/drive/folders/" + "1VanQf88QtskwH6I1z-Ut8oZst5ovuwKy",
-                output=output_dir,
-                quiet=False,
-                use_cookies=True,
-                remaining_ok=True  # Continue on errors
-            )
-            
-            # Get list of successfully downloaded files
-            downloaded_files = []
-            for root, _, files in os.walk(output_dir):
-                for file in files:
-                    downloaded_files.append(os.path.relpath(os.path.join(root, file), output_dir))
-            
-            st.success(f"✅ Successfully downloaded {len(downloaded_files)} files!")
-            with st.spinner("Unizipping files"):
-                with ZipFile(r"gdrive_images\preprocessed_images.zip", "r") as zip_ref:
-                    zip_ref.extractall(output_dir)
-                    
-                st.success("✅ Successfully unzipped files!")
-            # delete the zip file
-            os.remove(f"{output_dir}\preprocessed_images.zip")
-            downloaded_files = os.listdir(f'{output_dir}\preprocessed_images')
-            return output_dir, downloaded_files
 
-        except Exception as e:
-            st.error(f"❌ Download failed: {str(e)}")
-            return output_dir, []
+    try:
+        gdown.download_folder(
+            "https://drive.google.com/drive/folders/" + "1VanQf88QtskwH6I1z-Ut8oZst5ovuwKy",
+            output=output_dir,
+            quiet=False,
+            use_cookies=True,
+            remaining_ok=True
+        )
+
+        st.success("✅ Successfully downloaded files!")
+
+        
+        zip_file_path = None
+        for root, _, files in os.walk(output_dir):  # Walk the directory tree
+            for file in files:
+                if file == "preprocessed_images.zip":
+                    zip_file_path = os.path.join(root, file)
+                    break  # Found it!
+            if zip_file_path:
+                break  # Found it!
+
+        if not zip_file_path:
+            raise FileNotFoundError("preprocessed_images.zip not found in downloaded files")
+
+        st.write(f"Found zip file at: {zip_file_path}") # See the path in streamlit output
+
+        output_dir_for_zip = os.path.dirname(zip_file_path) # Extract the directory of the zip file
+
+        with st.spinner("Unzipping files"):
+            with ZipFile(zip_file_path, "r") as zip_ref:
+                zip_ref.extractall(output_dir_for_zip)  # Extract to the same directory as the zip
+
+            st.success("✅ Successfully unzipped files!")
+
+        os.remove(zip_file_path) # delete the zip
+        downloaded_files = os.listdir(os.path.join(output_dir_for_zip,"preprocessed_images")) # Get files from the extracted directory
+        return output_dir_for_zip, downloaded_files # Return the directory where the images are
+
+    except Exception as e:
+        st.error(f"❌ Download failed: {str(e)}")
+        return output_dir, []
 
 # Cache the loaded ResNet50 model to avoid reloading it on every run
 @st.cache_resource

@@ -40,12 +40,12 @@ def get_google_drive_images(output_dir="gdrive_images"):
             
             st.success(f"✅ Successfully downloaded {len(downloaded_files)} files!")
             with st.spinner("Unizipping files"):
-                with ZipFile("gdrive_images\preprocessed_images.zip", "r") as zip_ref:
+                with ZipFile(r"gdrive_images\preprocessed_images.zip", "r") as zip_ref:
                     zip_ref.extractall(output_dir)
                     
                 st.success("✅ Successfully unzipped files!")
             # delete the zip file
-            os.remove("gdrive_images\preprocessed_images.zip")
+            os.remove(r"gdrive_images\preprocessed_images.zip")
             downloaded_files = os.listdir(r'gdrive_images\preprocessed_images')
             return output_dir, downloaded_files
 

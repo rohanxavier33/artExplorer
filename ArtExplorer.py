@@ -246,7 +246,7 @@ if uploaded_file is not None:
                     if new_candidates:
                         replacement = random.choice(new_candidates)
                         st.session_state.current_sample[idx] = replacement
-                        cols[j].image(os.path.join('gdrive_images\preprocessed_images', replacement),
+                        cols[j].image(os.path.join(r'gdrive_images\preprocessed_images', replacement),
                                     use_container_width=True,
                                     caption=replacement)
                     else:

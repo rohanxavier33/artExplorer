@@ -219,6 +219,7 @@ if uploaded_file is not None:
     
         # Display the images in a grid with error handling
     if sample_images:
+        st.empty()
         # Add refresh button to sidebar
         if st.sidebar.button("🔄 Refresh Images", help="Show new random selection from this cluster"):
             # Force new random sample by clearing cached selection

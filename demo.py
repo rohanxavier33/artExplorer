@@ -10,13 +10,13 @@ import os
 import pandas as pd
 import random
 import gdown
+from zipfile import ZipFile 
 
 # Cache the loaded images from Google Drive to avoid redownloading them on every run
 @st.cache_data
-def get_google_drive_images(folder_id, output_dir="gdrive_images"):
+def get_google_drive_images(output_dir="gdrive_images"):
     
     """Download only images that exist in cluster mapping"""
-    st.info("📥 Initiating Google Drive download...")
     
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -25,7 +25,7 @@ def get_google_drive_images(folder_id, output_dir="gdrive_images"):
         try:
             # Download all contents recursively
             gdown.download_folder(
-                "https://drive.google.com/drive/folders/" + "1Gd9rDRee95CoX76alzkaIgXAAMqPdnde",
+                "https://drive.google.com/drive/folders/" + "1VanQf88QtskwH6I1z-Ut8oZst5ovuwKy",
                 output=output_dir,
                 quiet=False,
                 use_cookies=True,
@@ -39,6 +39,14 @@ def get_google_drive_images(folder_id, output_dir="gdrive_images"):
                     downloaded_files.append(os.path.relpath(os.path.join(root, file), output_dir))
             
             st.success(f"✅ Successfully downloaded {len(downloaded_files)} files!")
+            with st.spinner("Unizipping files"):
+                with ZipFile("gdrive_images\preprocessed_images.zip", "r") as zip_ref:
+                    zip_ref.extractall(output_dir)
+                    
+                st.success("✅ Successfully unzipped files!")
+            # delete the zip file
+            os.remove("gdrive_images\preprocessed_images.zip")
+            downloaded_files = os.listdir(r'gdrive_images\preprocessed_images')
             return output_dir, downloaded_files
 
         except Exception as e:
@@ -176,7 +184,7 @@ if uploaded_file is not None:
     
     # Get the list of images belonging to the same cluster
     cluster_mapping = load_cluster_mapping(selected_model)
-    data_dir, downloaded_files = get_google_drive_images("1Gd9rDRee95CoX76alzkaIgXAAMqPdnde")
+    data_dir, downloaded_files = get_google_drive_images()
    
     cluster_images = [f for f in downloaded_files
                     if f in cluster_mapping.index
@@ -234,7 +242,7 @@ if uploaded_file is not None:
                     if new_candidates:
                         replacement = random.choice(new_candidates)
                         st.session_state.current_sample[idx] = replacement
-                        cols[j].image(os.path.join(data_dir, replacement),
+                        cols[j].image(os.path.join(r'C:\Users\RohanGupta\Documents\vscode\ml2\art_style_fixer\art_style_grouping\gdrive_images\preprocessed_images', replacement),
                                     use_container_width=True,
                                     caption=replacement)
                     else:

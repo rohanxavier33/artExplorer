@@ -138,7 +138,6 @@ preprocess = transforms.Compose([
 ])
 
 st.title('Art Style Explorer 🎨')
-st.write(f"Current working directory: {os.getcwd()}")
 
 # Model selection (commented out since only K-means remains)
 # selected_model = st.sidebar.radio(

@@ -4,6 +4,3 @@ primaryColor="A8CAD6"
 backgroundColor="#E5F8F8"
 secondaryBackgroundColor="#C2EBEF"
 font="serif"
-
-[server]
-enableStaticFileWatcher = false

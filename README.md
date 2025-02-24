@@ -18,13 +18,13 @@ This project includes a **Streamlit-based application** that allows users to upl
 
 5.  You can adjust the number of retrieved images and refine searches using sidebar settings.
 
-🎨 Project Overview: Art Style Clustering with Unsupervised Learning
+🎨 Project Overview: Art Exploration with Unsupervised Learning
 ====================================================================
 
 **1️⃣ Introduction**
 --------------------
 
-This project applies **unsupervised learning** to group artworks by style. We use **deep learning** for feature extraction, **dimensionality reduction** to improve clustering accuracy, and an **interactive app** as a real-world application.
+This project applies **unsupervised learning** to group artworks and facilitate exploration of artistic siblings, by find hidden connections between your uploaded artwork and others across styles, colors, themes, and eras! We use **deep learning** for feature extraction, **dimensionality reduction** to improve clustering accuracy, and an **interactive app** as a real-world application.
 
 ### **Objectives**
 
@@ -58,7 +58,6 @@ This project applies **unsupervised learning** to group artworks by style. We us
 
 -   **UMAP 2D Projections**: Visualizing the dataset in lower dimensions.
 
--   **Outlier Analysis**: Identifying any abnormal data points.
 
 **4️⃣ Clustering Methods**
 --------------------------
@@ -90,8 +89,6 @@ We explore multiple clustering techniques:
 --------------------------
 
 -   **K-Means produced the most balanced clusters** but required tuning.
-
--   **DBSCAN was effective at finding dense clusters** but ignored scattered points.
 
 -   **Birch provided hierarchical organization** but needed refinement.
 

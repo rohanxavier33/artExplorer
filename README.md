@@ -1,7 +1,7 @@
 Art Style Clustering & Exploration (https://artexplorer.streamlit.app/)
 ==================================
 
-🚀 User Manual: Using the Streamlit App
+🚀 User Manual: Using the Streamlit App 
 ---------------------------------------
 
 This project includes a **Streamlit-based application** that allows users to upload an artwork and explore similar artworks from a dataset using unsupervised learning clustering techniques.
